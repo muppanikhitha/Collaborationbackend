@@ -5,19 +5,28 @@ import java.util.List;
 import org.springframework.stereotype.Repository;
 
 import com.niit.collaboration.model.Job;
+import com.niit.collaboration.model.JobApplication;
 
-@Repository	
 
+@Repository		//@Repository annotation is a specialization of the @Component annotation with similar use and functionality...
 public interface JobDAO {
-public boolean save(Job job);
+
+	// Declare all CRUD Operations...
 	
-	public boolean update(Job job);
+	public boolean save(Job job);										//implemented..	
 	
-	public boolean saveOrUpdate(Job job);
+	public boolean update(Job job);										//implemented..	
 	
-	public boolean delete(Job job);
+	public Job get(int id);												//implemented..	
 	
-	public Job get(String id);
+	public List<Job> list();											//implemented..	
+	public List<Job> listVacantJobs();									//implemented..	
 	
-	public List<Job> list();
+	public List<JobApplication> listJobApplications();
+	
+	public boolean applyForJob(JobApplication jobApplication);			//implemented..	
+	public boolean updateJobApplication(JobApplication jobApplication);	//implemented..	
+	
+	public JobApplication get(String userId, String jobId);				//implemented..	
+	public List<Job> getMyAppliedJobs(String userId);				//implemented..	
 }

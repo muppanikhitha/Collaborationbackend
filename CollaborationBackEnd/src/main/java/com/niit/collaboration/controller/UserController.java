@@ -1,6 +1,6 @@
-
 package com.niit.collaboration.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpSession;
@@ -9,7 +9,6 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,105 +16,179 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.niit.collaboration.dao.FriendDAO;
 import com.niit.collaboration.dao.UserDAO;
-import com.niit.collaboration.model.User;
+import com.niit.collaboration.model.Friend;
+import com.niit.collaboration.model.Users;
+
 
 @RestController
 public class UserController {
 
 	Logger log = Logger.getLogger(UserController.class);
 	
+	//@Autowired
+	//Users users;
+	
 	@Autowired
 	UserDAO userDAO;
 	
-	@GetMapping(value = "/user")
-	public ResponseEntity<List<User>> listUser() {
-		log.debug("**********Starting of listUser() method.");
-		List<User> user = userDAO.list();
-		if(user.isEmpty()) {
-			return new ResponseEntity<List<User>>(HttpStatus.NO_CONTENT);
+	@Autowired
+	Friend friend;
+	
+	@Autowired
+	FriendDAO friendDAO;
+	
+	/**
+	 * 	http://localhost:8020/CollaborationFrontEnd/users			//working
+	 * @return
+	 */
+	@GetMapping(value = "/users")
+	public ResponseEntity<List<Users>> listUsers() {
+		log.debug("**********Starting of listUsers() method.");
+		List<Users> users = userDAO.list();
+		if(users.isEmpty()) {
+			return new ResponseEntity<List<Users>>(HttpStatus.NO_CONTENT);
 		}
-		log.debug("**********End of listUser() method.");
-		return new ResponseEntity<List<User>>(user, HttpStatus.OK);
+		log.debug("**********End of listUsers() method.");
+		return new ResponseEntity<List<Users>>(users, HttpStatus.OK);
 	}
 	
+	/**
+	 * 	http://localhost:8020/CollaborationFrontEnd/searchForFriends			//working
+	 * @return
+	 */
+	@GetMapping(value = "/searchForFriends")
+	public ResponseEntity<List<Users>> listSearchForFriends(HttpSession session) {
+		ArrayList<Users> list = new ArrayList<Users>();
+		log.debug("**********Starting of listSearchForFriends() method.");
+		List<Users> users = userDAO.list();
+		if(users.isEmpty()) {
+			return new ResponseEntity<List<Users>>(HttpStatus.NO_CONTENT);
+		}
+		Users loggedInUser = (Users) session.getAttribute("loggedInUser");
+		for(Users  u:users)
+		{
+			String userId = u.getId();
+			boolean status = friendDAO.isFriend(userId, loggedInUser.getId());
+			if (!status  && userId.compareTo(loggedInUser.getId())!=0) {
+				list.add(u);
+			}
+		}
+		log.debug("**********End of listSearchForFriends() method.");
+		return new ResponseEntity<List<Users>>(list, HttpStatus.OK);
+	}
 	
+	/**
+	 * 	http://localhost:8020/CollaborationFrontEnd/user/			//working
+	 * @param users
+	 * @return
+	 */
 	@PostMapping(value = "/user/")
-	public ResponseEntity<User> createUser(@RequestBody User user) {
+	public ResponseEntity<Users> createUser(@RequestBody Users users) {
 		log.debug("**********Starting of createUser() method.");
-		if(userDAO.get(user.getId()) == null) {
-			userDAO.save(user);
+		if(userDAO.get(users.getId()) == null) {
+			userDAO.save(users);
 			log.debug("**********End of createUser() method.");
-			return new ResponseEntity<User>(user, HttpStatus.OK);
+			return new ResponseEntity<Users>(users, HttpStatus.OK);
 		}
-		user.setErrMessage("User already exist with id : " +user.getId());
-		log.error("User already exist with id : " +user.getId());
-		return new ResponseEntity<User>(HttpStatus.OK);
+		users.setErrMessage("User already exist with id : " +users.getId());
+		log.error("User already exist with id : " +users.getId());
+		return new ResponseEntity<Users>(HttpStatus.OK);
 	}
 	
-	 
+	/**
+	 * 	http://localhost:8020/CollaborationFrontEnd/user/{id}			//working
+	 * @param id
+	 * @param users
+	 * @return
+	 */
 	@PutMapping(value = "/user/{id}")
-	public ResponseEntity<User> updateUser(@PathVariable("id") String id, @RequestBody User user) {
+	public ResponseEntity<Users> updateUser(@PathVariable("id") String id, @RequestBody Users users, HttpSession session) {
 		log.debug("**********Starting of updateUser() method.");
 		if(userDAO.get(id) == null) {
-			user = new User();
-			user.setErrMessage("User does not exist with id : " +user.getId());
-			log.error("User does not exist with id : " +user.getId());
-			return new ResponseEntity<User>(user, HttpStatus.NOT_FOUND);
+			users = new Users();
+			users.setErrMessage("User does not exist with id : " +users.getId());
+			log.error("User does not exist with id : " +users.getId());
+			return new ResponseEntity<Users>(users, HttpStatus.NOT_FOUND);
 		}
-		userDAO.update(user);
+		Users loggedInUser = (Users) session.getAttribute("loggedInUser");
+		users.setId(loggedInUser.getId());
+		users.setRole(loggedInUser.getRole());
+		userDAO.update(users);
 		log.debug("**********End of updateUser() method.");
-		return new ResponseEntity<User>(user, HttpStatus.OK);
+		return new ResponseEntity<Users>(users, HttpStatus.OK);
 	}
-	
-	
-	@DeleteMapping(value = "/user/{id}")
-	public ResponseEntity<User> deleteUser(@PathVariable("id") String id) {
-		log.debug("**********Starting of deleteUser() method.");
-		User user = userDAO.get(id);
-		if(user == null) {
-			user = new User();
-			user.setErrMessage("User does not exist with id : " + id);
-			log.error("User does not exist with id : " + id);
-			return new ResponseEntity<User>(user, HttpStatus.NOT_FOUND);
-		}
-		userDAO.delete(user);
-		log.debug("**********End of deleteUser() method.");
-		return new ResponseEntity<User>(HttpStatus.OK);		
-	}
-	
-	
+		
+	/**
+	 * 	http://localhost:8020/CollaborationFrontEnd/user/{id}			//working
+	 * @param id
+	 * @return
+	 */
 	@GetMapping(value = "/user/{id}")
-	public ResponseEntity<User> getUser(@PathVariable("id") String id) {
+	public ResponseEntity<Users> getUser(@PathVariable("id") String id) {
 		log.debug("**********Starting of getUser() method.");
-		User user = userDAO.get(id);
-		if(user == null) {
-			user = new User();
-			user.setErrMessage("User does not exist with id : " + id);
+		Users users = userDAO.get(id);
+		if(users == null) {
+			users = new Users();
+			users.setErrMessage("User does not exist with id : " + id);
 			log.error("User does not exist with id : " + id);
-			return new ResponseEntity<User>(user, HttpStatus.NOT_FOUND);
+			return new ResponseEntity<Users>(users, HttpStatus.NOT_FOUND);
 		}
 		log.debug("**********End of getUser() method.");
-		return new ResponseEntity<User>(user, HttpStatus.OK);
+		return new ResponseEntity<Users>(users, HttpStatus.OK);
 	}
 	
-	 
-	@PostMapping(value = "/user/authenticate/")
-	public ResponseEntity<User> authenticateUser(@RequestBody User user, HttpSession session) {
-		log.debug("**********Starting of authenticateUser() method.");
-		user = userDAO.authenticate(user.getId(), user.getPassword());
-		if(user == null) {
-			user = new User();
-			user.setErrMessage("Invalid userId or password...");
+	/**
+	 * 	http://localhost:8020/CollaborationFrontEnd/user/login			//working
+	 * @param users
+	 * @param session
+	 * @return
+	 */
+	@PostMapping(value = "/user/login")
+	public ResponseEntity<Users> login(@RequestBody Users users, HttpSession session) {
+		log.debug("**********Starting of login() method.");
+		users = userDAO.authenticate(users.getId(), users.getPassword());
+		if(users == null) {
+			users = new Users();	//we need to create new users object to set errorMsg and errorCode...
+			users.setErrCode("404");
+			users.setErrMessage("Invalid userId or password...");
 			log.error("Invalid userId or password...");
 		}
 		else {
-			session.setAttribute("loggedInUser", user);
-			session.setAttribute("loggedInUserID", user.getId());
+			session.setAttribute("loggedInUser", users);
+			session.setAttribute("loggedInUserID", users.getId());
+			session.setAttribute("LoggedInStatus", users.getIsOnline());
+			
+			friendDAO.setOnline(users.getId());
+			userDAO.setOnline(users.getId());
 		}
-		log.debug("**********End of authenticateUser() method.");
-		return new ResponseEntity<User>(user, HttpStatus.OK);
+		log.debug("**********End of login() method.");
+		return new ResponseEntity<Users>(users, HttpStatus.OK);
 	}
+	
+	/**
+	 * http://localhost:8020/CollaborationFrontEnd/user/logout			//not working
+	 * @param users
+	 * @param session
+	 * @return
+	 */
+	@GetMapping(value = "/user/logout")
+	public ResponseEntity<Users> logout(HttpSession session) {
+		log.debug("**********Starting of logout() method.");
+		
+	String userId = (String) session.getAttribute("loggedInUserID");
+		
+		log.debug("**********"+userId+"**********");
+		
+		friendDAO.setOffline(userId);
+		userDAO.setOffline(userId);
+		
+		session.invalidate();
+		log.debug("**********End of logout() method.");
+		return new ResponseEntity<Users> (HttpStatus.OK);
+	}
+	
 }
 
 

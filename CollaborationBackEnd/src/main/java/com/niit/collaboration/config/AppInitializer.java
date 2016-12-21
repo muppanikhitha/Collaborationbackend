@@ -3,8 +3,11 @@ package com.niit.collaboration.config;
 import org.apache.log4j.Logger;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
-public class AppInitializer  extends AbstractAnnotationConfigDispatcherServletInitializer{
-Logger log = Logger.getLogger(AppInitializer.class);
+//web.xml - Java based configuration...
+
+public class AppInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
+
+	Logger log = Logger.getLogger(AppInitializer.class);
 	
 	@Override
 	protected Class[] getRootConfigClasses() {
